@@ -58,7 +58,7 @@ with col2:
     
     # Pulsanti uno sopra l'altro
     if st.button("Player", use_container_width=True): st.session_state.page = 'Player'
-    if st.button("TEAMS", use_container_width=True): st.session_state.page = 'TEAMS'
+    if st.button("TEAMS", use_container_width=True): st.session_state.page = 'Teams'
     if st.button("Rules", use_container_width=True): st.session_state.page = 'Rules'
     if st.button("Scrims", use_container_width=True): st.session_state.page = 'Scrims'
     if st.button("Stats", use_container_width=True): st.session_state.page = 'Stats'
