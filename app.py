@@ -57,11 +57,11 @@ with col2:
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Pulsanti uno sopra l'altro
-    if st.button("Player", use_container_width=True): st.session_state.page = 'Player'
-    if st.button("TEAMS", use_container_width=True): st.session_state.page = 'Teams'
-    if st.button("Rules", use_container_width=True): st.session_state.page = 'Rules'
-    if st.button("Scrims", use_container_width=True): st.session_state.page = 'Scrims'
-    if st.button("Stats", use_container_width=True): st.session_state.page = 'Stats'
+    if st.button("REGISTERED PLAYERS", use_container_width=True): st.session_state.page = 'Player'
+    if st.button("REGISTERED TEAMS", use_container_width=True): st.session_state.page = 'Teams'
+    if st.button("RULES \ SETTING", use_container_width=True): st.session_state.page = 'Rules'
+    if st.button("SCRIMS RESULT", use_container_width=True): st.session_state.page = 'Scrims'
+    if st.button("PERSONAL STATS", use_container_width=True): st.session_state.page = 'Stats'
     
 
     # DYNAMIC CONTENT
