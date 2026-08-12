@@ -56,14 +56,12 @@ with col2:
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    b1, b2, b3, b4 = st.columns(4)
-    if b1.button("Player"): st.session_state.page = 'Player'
-    if b2.button("Rules"): st.session_state.page = 'Rules'
-    if b3.button("Scrims"): st.session_state.page = 'Scrims'
-    if b4.button("Stats"): st.session_state.page = 'Stats'
-    
-    if st.button("TEAMS", use_container_width=True):
-        st.session_state.page = 'Teams'
+    # Pulsanti uno sopra l'altro
+    if st.button("Player", use_container_width=True): st.session_state.page = 'Player'
+    if st.button("Rules", use_container_width=True): st.session_state.page = 'Rules'
+    if st.button("Scrims", use_container_width=True): st.session_state.page = 'Scrims'
+    if st.button("Stats", use_container_width=True): st.session_state.page = 'Stats'
+    if st.button("TEAMS", use_container_width=True): st.session_state.page = 'Teams'
 
     # DYNAMIC CONTENT
     if st.session_state.page == 'Rules':
