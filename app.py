@@ -100,7 +100,6 @@ with col2:
             while len(col_e) < 8: col_e.append("")
             
             for g, rng in [("Game 1", "F8:H15"), ("Game 2", "J8:L15"), ("Game 3", "N8:P15"), ("Game 4", "R8:T15"), ("Game 5", "V8:X15")]:
-                # Titolo centrato aggiunto qui
                 st.markdown(f"<h3 style='text-align: center; color: #FFD700;'>{g}</h3>", unsafe_allow_html=True)
                 data = ws.get(rng)
                 rows = []
@@ -115,49 +114,38 @@ with col2:
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
             
             # Titolo Total Score centrato
-        st.markdown("<h3 style='text-align: center; color: #FFD700;'>Total Score</h3>", unsafe_allow_html=True)
-        
-        try:
-            # Leggiamo l'intero blocco AE8:AF15
-            # ws.get restituirà una lista di liste, es: [['TeamA', 10], ['TeamB', 5], ...]
-            data = ws.get('AE8:AF15')
+            st.markdown("<h3 style='text-align: center; color: #FFD700;'>Total Score</h3>", unsafe_allow_html=True)
             
-            # Prepariamo le liste per le colonne
+            # Leggiamo l'intero blocco AE8:AF15
+            data_score = ws.get('AE8:AF15')
             teams = []
             points = []
             
-            # Iteriamo per assicurarci di avere esattamente 8 righe
             for i in range(8):
-                # Controlliamo se la riga esiste nei dati scaricati
-                if i < len(data):
-                    row = data[i]
-                    # Recupera il nome team (colonna AE, indice 0)
+                if i < len(data_score):
+                    row = data_score[i]
                     teams.append(row[0] if (len(row) > 0 and row[0] is not None) else "")
-                    # Recupera i punti (colonna AF, indice 1)
                     points.append(row[1] if (len(row) > 1 and row[1] is not None) else "")
                 else:
-                    # Se il foglio ha meno righe, riempiamo con vuoto
                     teams.append("")
                     points.append("")
             
-            # Crea e visualizza il DataFrame
-            df = pd.DataFrame({
+            df_score = pd.DataFrame({
                 "Position": range(1, 9), 
                 "Team": teams, 
                 "Points": points
             })
             
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(df_score, use_container_width=True, hide_index=True)
             
         except Exception as e: 
-            st.error(f"Errore nella lettura dei dati: {e}")
+            st.error(f"Error: {e}")
 
     elif st.session_state.page == 'Stats':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
             
-            # Funzione pulita senza alcun troncamento
             def fetch_full_col(rng):
                 raw = ws.get(rng)
                 col = []
@@ -176,7 +164,6 @@ with col2:
                 "DEA": fetch_full_col('K11:K34')
             })
             
-            # Configuriamo solo la larghezza visiva delle colonne senza toccare i dati interni
             st.dataframe(
                 df, 
                 use_container_width=True, 
