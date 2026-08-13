@@ -115,12 +115,42 @@ with col2:
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
             
             # Titolo Total Score centrato
-            st.markdown("<h3 style='text-align: center; color: #FFD700;'>Total Score</h3>", unsafe_allow_html=True)
-            pts_raw = ws.get('AF8:AF15')
-            pts = [r[0] if (r and len(r) > 0 and r[0] is not None) else "" for r in pts_raw]
-            while len(pts) < 8: pts.append("")
-            st.dataframe(pd.DataFrame({"Position": range(1,9), "Team": col_e, "Points": pts}), use_container_width=True, hide_index=True)
-        except Exception as e: st.error(f"Error: {e}")
+        st.markdown("<h3 style='text-align: center; color: #FFD700;'>Total Score</h3>", unsafe_allow_html=True)
+        
+        try:
+            # Leggiamo l'intero blocco AE8:AF15
+            # ws.get restituirà una lista di liste, es: [['TeamA', 10], ['TeamB', 5], ...]
+            data = ws.get('AE8:AF15')
+            
+            # Prepariamo le liste per le colonne
+            teams = []
+            points = []
+            
+            # Iteriamo per assicurarci di avere esattamente 8 righe
+            for i in range(8):
+                # Controlliamo se la riga esiste nei dati scaricati
+                if i < len(data):
+                    row = data[i]
+                    # Recupera il nome team (colonna AE, indice 0)
+                    teams.append(row[0] if (len(row) > 0 and row[0] is not None) else "")
+                    # Recupera i punti (colonna AF, indice 1)
+                    points.append(row[1] if (len(row) > 1 and row[1] is not None) else "")
+                else:
+                    # Se il foglio ha meno righe, riempiamo con vuoto
+                    teams.append("")
+                    points.append("")
+            
+            # Crea e visualizza il DataFrame
+            df = pd.DataFrame({
+                "Position": range(1, 9), 
+                "Team": teams, 
+                "Points": points
+            })
+            
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            
+        except Exception as e: 
+            st.error(f"Errore nella lettura dei dati: {e}")
 
     elif st.session_state.page == 'Stats':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
