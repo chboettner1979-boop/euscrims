@@ -56,16 +56,17 @@ with col2:
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Pulsanti uno sopra l'altro
+    # Pulsanti di navigazione corretti e allineati
     if st.button("REGISTERED PLAYERS", use_container_width=True): st.session_state.page = 'Player'
     if st.button("REGISTERED TEAMS", use_container_width=True): st.session_state.page = 'Teams'
     if st.button("RULES \ SETTING", use_container_width=True): st.session_state.page = 'Rules'
     if st.button("SCRIMS RESULT", use_container_width=True): st.session_state.page = 'Scrims'
     if st.button("PERSONAL STATS", use_container_width=True): st.session_state.page = 'Stats'
     
+    page = st.session_state.page
 
     # DYNAMIC CONTENT
-    if st.session_state.page == 'Rules':
+    if page == 'Rules':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>SCORE</h2>", unsafe_allow_html=True)
         st.dataframe(pd.DataFrame({
             "Details": ["1 KILL = 1 POINT", "250 DMG = 1 POINTS", "", "", ""],
@@ -78,7 +79,7 @@ with col2:
         st.markdown("<h3 style='text-align: center; color: #FFD700;'>GENERAL RULES</h3>", unsafe_allow_html=True)
         st.markdown("- **THE SCRIMS IS 5 MATCHES**\n- **FIRST GAME STARTS 5 MIN AFTER SCHEDULED TIME**\n- **LAST MINUTE SUBS GOES THROUGH ADMINS**\n- **USE THE SAME IGN**")
 
-    elif st.session_state.page == 'Teams':
+    elif page == 'Teams':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>TEAMS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').worksheet("LOBBY / RULES")
@@ -89,12 +90,11 @@ with col2:
                 st.dataframe(pd.DataFrame(row, columns=["TEAMS"]), use_container_width=True, hide_index=True)
         except Exception as e: st.error(f"Error: {e}")
 
-    elif st.session_state.page == 'Scrims':
+    elif page == 'Scrims':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>SCRIMS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(823408140)
             
-            # Legge correttamente i nomi dei team
             col_raw = ws.get('E8:E15')
             col_e = [r[0] if (r and len(r) > 0 and r[0] is not None) else "" for r in col_raw]
             while len(col_e) < 8: col_e.append("")
@@ -113,10 +113,8 @@ with col2:
                     })
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
             
-            # Titolo Total Score centrato
             st.markdown("<h3 style='text-align: center; color: #FFD700;'>Total Score</h3>", unsafe_allow_html=True)
             
-            # Leggiamo l'intero blocco AE8:AF15
             data_score = ws.get('AE8:AF15')
             teams = []
             points = []
@@ -140,35 +138,32 @@ with col2:
             
         except Exception as e: 
             st.error(f"Error: {e}")
-elif st.session_state.page == 'Stats':
+
+    elif page == 'Stats':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
             
-            # Leggiamo l'intera area tabellare che va dalla colonna D alla colonna K (righe 11-34)
             raw_data = ws.get('D11:K34')
             
             rows = []
             for r in raw_data:
-                # Assicuriamoci che la riga abbia abbastanza elementi riempiendola con stringhe vuote se necessario
                 while len(r) < 8:
                     r.append("")
                 
                 player_name = str(r[0]).strip() if r[0] is not None else ""
                 
-                # Consideriamo solo le righe che hanno un nome valido inserito
                 if player_name:
                     rows.append({
                         "Player": player_name,
-                        "K": str(r[1]) if r[1] is not None else "",     # Colonna E (indice 1 relativo a D)
-                        "D": str(r[3]) if r[3] is not None else "",     # Colonna G (indice 3 relativo a D)
-                        "MVP": str(r[5]) if r[5] is not None else "",   # Colonna I (indice 5 relativo a D)
-                        "DEA": str(r[7]) if r[7] is not None else ""    # Colonna K (indice 7 relativo a D)
+                        "K": str(r[1]) if r[1] is not None else "",   
+                        "D": str(r[3]) if r[3] is not None else "",   
+                        "MVP": str(r[5]) if r[5] is not None else "", 
+                        "DEA": str(r[7]) if r[7] is not None else ""  
                     })
             
             df = pd.DataFrame(rows)
             
-            # Se ci sono dati, ordiniamo in base al nome del giocatore per maggiore pulizia e ordine alfabetico
             if not df.empty:
                 df = df.sort_values(by="Player", ascending=True).reset_index(drop=True)
             else:
@@ -186,7 +181,8 @@ elif st.session_state.page == 'Stats':
                     "DEA": st.column_config.TextColumn("DEA", width="small")
                 }
             )
-        except Exception as e: st.error(f"Error: {e}")
+        except Exception as e: 
+            st.error(f"Error: {e}")
 
     else:
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>Player Register</h2>", unsafe_allow_html=True)
@@ -195,4 +191,5 @@ elif st.session_state.page == 'Stats':
             df = pd.DataFrame(data, columns=["Player"])
             df.insert(0, "N.", range(1, len(df) + 1))
             st.dataframe(df, use_container_width=True, hide_index=True)
-        except Exception as e: st.error(f"Error: {e}")
+        except Exception as e: 
+            st.error(f"Error: {e}")
