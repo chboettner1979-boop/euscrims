@@ -102,7 +102,7 @@ with col2:
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Pulsanti di navigazione aggiornati con STAT COMP
+    # Pulsanti di navigazione
     if st.button("REGISTERED PLAYERS", use_container_width=True): st.session_state.page = 'Player'
     if st.button("REGISTERED TEAMS", use_container_width=True): st.session_state.page = 'Teams'
     if st.button("RULES \ SETTING", use_container_width=True): st.session_state.page = 'Rules'
@@ -191,46 +191,45 @@ with col2:
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
             
-            def get_stat_block(player_col, val_col):
-                p_vals = ws.col_values(player_col)[10:34]
-                v_vals = ws.col_values(val_col)[10:34]
-                while len(p_vals) < 24: p_vals.append("")
-                while len(v_vals) < 24: v_vals.append("")
-                df_temp = pd.DataFrame({"Player": p_vals, "Val": v_vals})
-                df_temp = df_temp[df_temp["Player"].str.strip() != ""]
-                return df_temp
-
-            df_kill = get_stat_block(4, 5).rename(columns={"Val": "K"})
-            df_dmg  = get_stat_block(6, 7).rename(columns={"Val": "DMG"})
-            df_mvp  = get_stat_block(8, 9).rename(columns={"Val": "MVP"})
-            df_dea  = get_stat_block(10, 11).rename(columns={"Val": "DEA"})
-
-            all_players = pd.unique(pd.concat([df_kill["Player"], df_dmg["Player"], df_mvp["Player"], df_dea["Player"]]))
-            all_players = [p for p in all_players if p.strip() != ""]
+            raw_data = ws.get('D11:K34')
             
-            df_final = pd.DataFrame({"Player": all_players})
-
-            for df_sub in [df_kill, df_dmg, df_mvp, df_dea]:
-                df_final = pd.merge(df_final, df_sub, on="Player", how="left")
-
-            df_final = df_final.fillna("0")
-            df_final["K_num"] = pd.to_numeric(df_final["K"], errors="coerce").fillna(0)
-            df_final = df_final.sort_values(by="K_num", ascending=False).drop(columns=["K_num"]).reset_index(drop=True)
+            rows = []
+            for r in raw_data:
+                while len(r) < 8:
+                    r.append("")
+                
+                player_name = str(r[0]).strip() if r[0] is not None else ""
+                
+                if player_name:
+                    rows.append({
+                        "Player": player_name,
+                        "K": str(r[1]) if r[1] is not None else "",   # Colonna E
+                        "D": str(r[3]) if r[3] is not None else "",   # Colonna G
+                        "MVP": str(r[5]) if r[5] is not None else "", # Colonna I
+                        "DEA": str(r[7]) if r[7] is not None else ""  # Colonna K
+                    })
+            
+            df = pd.DataFrame(rows)
+            
+            if not df.empty:
+                df = df.sort_values(by="Player", ascending=True).reset_index(drop=True)
+            else:
+                df = pd.DataFrame(columns=["Player", "K", "D", "MVP", "DEA"])
 
             st.dataframe(
-                df_final, 
+                df, 
                 use_container_width=True, 
                 hide_index=True,
                 column_config={
                     "Player": st.column_config.TextColumn("Player", width="medium"),
                     "K": st.column_config.TextColumn("K", width="small"),
-                    "DMG": st.column_config.TextColumn("DMG", width="small"),
+                    "D": st.column_config.TextColumn("D", width="small"),
                     "MVP": st.column_config.TextColumn("MVP", width="small"),
                     "DEA": st.column_config.TextColumn("DEA", width="small")
                 }
             )
         except Exception as e: 
-            st.error(f"Errore caricamento dati: {e}")
+            st.error(f"Error: {e}")
 
     elif page == 'STAT COMP':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STAT COMP</h2>", unsafe_allow_html=True)
