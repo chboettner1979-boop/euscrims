@@ -112,8 +112,18 @@ with col2:
     
     page = st.session_state.page
 
-    # DYNAMIC CONTENT
-    if page == 'Rules':
+    # DYNAMIC CONTENT (Gestione esplicita di tutte le pagine)
+    if page == 'Player':
+        st.markdown("<h2 style='text-align: center; color: #FFD700;'>Player Register</h2>", unsafe_allow_html=True)
+        try:
+            data = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(155113138).get('D8:D32')
+            df = pd.DataFrame(data, columns=["Player"])
+            df.insert(0, "N.", range(1, len(df) + 1))
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        except Exception as e: 
+            st.error(f"Error: {e}")
+
+    elif page == 'Rules':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>SCORE</h2>", unsafe_allow_html=True)
         st.dataframe(pd.DataFrame({
             "Details": ["1 KILL = 1 POINT", "250 DMG = 1 POINTS", "", "", ""],
@@ -381,13 +391,3 @@ with col2:
             df_weapons_final = pd.DataFrame(columns=["WEAPON", "TOT SHOTS", "SHOT HIT", "ACC%", "DMG", "HEADSHOT", "MAX DISTANCE"])
 
         st.dataframe(df_weapons_final, use_container_width=True, hide_index=True)
-
-    else:
-        st.markdown("<h2 style='text-align: center; color: #FFD700;'>Player Register</h2>", unsafe_allow_html=True)
-        try:
-            data = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(155113138).get('D8:D32')
-            df = pd.DataFrame(data, columns=["Player"])
-            df.insert(0, "N.", range(1, len(df) + 1))
-            st.dataframe(df, use_container_width=True, hide_index=True)
-        except Exception as e: 
-            st.error(f"Error: {e}")
