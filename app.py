@@ -140,30 +140,40 @@ with col2:
             
         except Exception as e: 
             st.error(f"Error: {e}")
-
-    elif st.session_state.page == 'Stats':
+elif st.session_state.page == 'Stats':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
             
-            def fetch_full_col(rng):
-                raw = ws.get(rng)
-                col = []
-                for r in raw:
-                    val = str(r[0]) if (r and len(r) > 0 and r[0] is not None) else ""
-                    col.append(val)
-                while len(col) < 24:
-                    col.append("")
-                return col[:24]
-
-            df = pd.DataFrame({
-                "Player": fetch_full_col('D11:D34'), 
-                "K": fetch_full_col('E11:E34'),       
-                "D": fetch_full_col('G11:G34'),
-                "MVP": fetch_full_col('I11:I34'),
-                "DEA": fetch_full_col('K11:K34')
-            })
+            # Leggiamo l'intera area tabellare che va dalla colonna D alla colonna K (righe 11-34)
+            raw_data = ws.get('D11:K34')
             
+            rows = []
+            for r in raw_data:
+                # Assicuriamoci che la riga abbia abbastanza elementi riempiendola con stringhe vuote se necessario
+                while len(r) < 8:
+                    r.append("")
+                
+                player_name = str(r[0]).strip() if r[0] is not None else ""
+                
+                # Consideriamo solo le righe che hanno un nome valido inserito
+                if player_name:
+                    rows.append({
+                        "Player": player_name,
+                        "K": str(r[1]) if r[1] is not None else "",     # Colonna E (indice 1 relativo a D)
+                        "D": str(r[3]) if r[3] is not None else "",     # Colonna G (indice 3 relativo a D)
+                        "MVP": str(r[5]) if r[5] is not None else "",   # Colonna I (indice 5 relativo a D)
+                        "DEA": str(r[7]) if r[7] is not None else ""    # Colonna K (indice 7 relativo a D)
+                    })
+            
+            df = pd.DataFrame(rows)
+            
+            # Se ci sono dati, ordiniamo in base al nome del giocatore per maggiore pulizia e ordine alfabetico
+            if not df.empty:
+                df = df.sort_values(by="Player", ascending=True).reset_index(drop=True)
+            else:
+                df = pd.DataFrame(columns=["Player", "K", "D", "MVP", "DEA"])
+
             st.dataframe(
                 df, 
                 use_container_width=True, 
