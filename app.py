@@ -196,60 +196,98 @@ with col2:
         except Exception as e: 
             st.error(f"Error: {e}")
 
-    elif page == 'Stats':
+     elif st.session_state.page == 'Stats':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
-            
+
+            # Leggiamo ogni colonna separatamente per garantire l'allineamento perfetto
+            # Recuperiamo i nomi (D) e le rispettive statistiche (E, G, I, K)
+            # .col_values(index) recupera tutta la colonna, poi puliamo l'intervallo 11-34
+            def get_clean_col(col_idx):
+                col = ws.col_values(col_idx)[10:34] # Indice 10:34 corrisponde alle righe 11-34
+                # Riempimento con stringa vuota se la colonna è più corta di 24 righe
+                while len(col) < 24:
+                    col.append("")
+                return col
+
+            df = pd.DataFrame({
+                "Player": get_clean_col(4),  # Colonna D
+                "K": get_clean_col(5),       # Colonna E
+                "D": get_clean_col(7),       # Colonna G
+                "MVP": get_clean_col(9),     # Colonna I
+                "DEA": get_clean_col(11)     # Colonna K
+            })
+            # Funzione di supporto per estrarre una coppia di colonne (Player, Valore) dal foglio
             def get_stat_block(player_col, val_col):
-                # Saltiamo le prime righe errate partendo da un indice più basso pulito (es. 12 in poi)
-                p_vals = ws.col_values(player_col)[12:34]
-                v_vals = ws.col_values(val_col)[12:34]
-                while len(p_vals) < len(v_vals): p_vals.append("")
-                while len(v_vals) < len(p_vals): v_vals.append("")
-                df_temp = pd.DataFrame({"Player": p_vals, "Val": v_vals})
+                p_vals = ws.col_values(player_col)[10:34] # Righe 11-34
+                v_vals = ws.col_values(val_col)[10:34]
                 
-                # Pulizia rigorosa da #REF!, celle vuote o testi non validi
-                df_temp["Player"] = df_temp["Player"].astype(str).str.strip()
-                df_temp = df_temp[
-                    (df_temp["Player"] != "") & 
-                    (df_temp["Player"].str.upper() != "#REF!") & 
-                    (~df_temp["Player"].str.lower().str.contains("no players"))
-                ]
+                # Uniformiamo la lunghezza
+                while len(p_vals) < 24: p_vals.append("")
+                while len(v_vals) < 24: v_vals.append("")
+                
+                df_temp = pd.DataFrame({"Player": p_vals, "Val": v_vals})
+                # Pulizia righe vuote o zeri spuri
+                df_temp = df_temp[df_temp["Player"].str.strip() != ""]
                 return df_temp
 
-            # Se la colonna K si trova in un'altra colonna, modifica qui i numeri (es. 4 per Player, 5 per K)
+            # 1. Estraiamo ogni singola metrica associata al rispettivo nome giocatore presente nel blocco
+            df_k = get_stat_block(4, 5)     # Colonna D (Player) e E (Kill)
+            df_d = get_stat_block(7, 8)     # Colonna G (Player) e H (Dmg - se ti serve, oppure tieni la tua) -> usiamo G e H o G e colonna corretta
+            # Nel tuo script originale avevi: K(E), D(G), MVP(I), DEA(K) con i nomi sempre nella colonna D, F, H, J ecc. Guardando l'immagine:
+            # Blocco 1: Player(D), Kill(E)
+            # Blocco 2: Player(F), Dmg(G) -> controlla gli indici esatti delle col. Nell'immagine: D=Player, E=Kill, F=Player, G=Dmg, H=Player, I=MVP, J=Player, K=Death
+
+            # Rimuoviamo le righe dove il campo Player è vuoto
+            df = df[df["Player"].str.strip() != ""]
             df_kill = get_stat_block(4, 5).rename(columns={"Val": "K"})
-            df_dmg  = get_stat_block(6, 7).rename(columns={"Val": "DMG"})
+            df_dmg  = get_stat_block(6, 7).rename(columns={"Val": "DMG"}) # se vuoi aggiungere DMG o ignorarlo
             df_mvp  = get_stat_block(8, 9).rename(columns={"Val": "MVP"})
             df_dea  = get_stat_block(10, 11).rename(columns={"Val": "DEA"})
 
-            all_players = pd.unique(pd.concat([df_kill["Player"], df_dmg["Player"], df_mvp["Player"], df_dea["Player"]]))
-            all_players = [p for p in all_players if p and p.strip() != ""]
-            
+            # Raccogliamo tutti i giocatori unici
+            all_players = pd.Series(
+                list(set(df_kill["Player"].tolist() + df_mvp["Player"].tolist() + df_dea["Player"].tolist()))
+            )
+            all_players = all_players[all_players.str.strip() != ""]
+
+            # Ordinamento crescente per Nome Giocatore
+            df = df.sort_values(by="Player", key=lambda col: col.str.lower()).reset_index(drop=True)
             df_final = pd.DataFrame({"Player": all_players})
 
-            for df_sub in [df_kill, df_dmg, df_mvp, df_dea]:
-                df_final = pd.merge(df_final, df_sub, on="Player", how="left")
+            # Uniamo le metriche agganciandole rigorosamente al nome del giocatore
+            df_final = pd.merge(df_final, df_kill, on="Player", how="left")
+            df_final = pd.merge(df_final, df_mvp, on="Player", how="left")
+            df_final = pd.merge(df_final, df_dea, on="Player", how="left")
 
-            df_final = df_final.fillna("0")
+            # Sostituiamo i NaN/vuoti con stringhe vuote
+            df_final = df_final.fillna("")
+
+            # Convertiamo le Kills in numerico temporaneamente per ordinare in modo corretto (discendente)
             df_final["K_num"] = pd.to_numeric(df_final["K"], errors="coerce").fillna(0)
             df_final = df_final.sort_values(by="K_num", ascending=False).drop(columns=["K_num"]).reset_index(drop=True)
 
             st.dataframe(
+                df, 
                 df_final, 
                 use_container_width=True, 
                 hide_index=True,
                 column_config={
                     "Player": st.column_config.TextColumn("Player", width="medium"),
+                    "K": st.column_config.NumberColumn("K", format="%d"),
+                    "D": st.column_config.NumberColumn("D", format="%d"),
+                    "MVP": st.column_config.NumberColumn("MVP", format="%d"),
+                    "DEA": st.column_config.NumberColumn("DEA", format="%d")
                     "K": st.column_config.TextColumn("K", width="small"),
-                    "DMG": st.column_config.TextColumn("DMG", width="small"),
                     "MVP": st.column_config.TextColumn("MVP", width="small"),
                     "DEA": st.column_config.TextColumn("DEA", width="small")
                 }
             )
         except Exception as e: 
-            st.error(f"Errore caricamento dati: {e}")
+            st.error(f"Errore nel caricamento: {e}")
+
+            st.error(f"Error: {e}")
 
     elif page == 'STAT COMP':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STAT COMP</h2>", unsafe_allow_html=True)
