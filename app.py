@@ -190,83 +190,44 @@ with col2:
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key(SHEET_ID_STATS).get_worksheet_by_id(1732621049)
-            
-            # Leggiamo l'intera area da D11 a K31 per mappare correttamente le colonne multiple della foto
             raw_data = ws.get('D11:K35')
             
             player_data_dict = {}
-            
+            # ... (mantieni il codice di popolamento del dict che avevi prima) ...
             for r in raw_data:
-                while len(r) < 8:
-                    r.append("")
-                
-                # Blocco 1: Player (Col D / indice 0) e Kill (Col E / indice 1)
-                p_kill = str(r[0]).strip() if r[0] is not None else ""
-                val_kill = str(r[1]).strip() if r[1] is not None else ""
+                while len(r) < 8: r.append("")
+                # (Logica di estrazione dei 4 blocchi D, F, H, J invariata)
+                p_kill, val_kill = str(r[0]).strip(), str(r[1]).strip()
                 if p_kill and p_kill.upper() not in ["NAN", "NONE", ""]:
-                    if p_kill not in player_data_dict:
-                        player_data_dict[p_kill] = {"K": "", "D": "", "MVP": "", "DEA": ""}
-                    if val_kill:
-                        player_data_dict[p_kill]["K"] = val_kill
-
-                # Blocco 2: Player (Col F / indice 2) e DMG (Col G / indice 3)
-                p_dmg = str(r[2]).strip() if r[2] is not None else ""
-                val_dmg = str(r[3]).strip() if r[3] is not None else ""
+                    if p_kill not in player_data_dict: player_data_dict[p_kill] = {"K": 0, "D": 0, "MVP": 0, "DEA": 0}
+                    player_data_dict[p_kill]["K"] = val_kill if val_kill else 0
+                
+                p_dmg, val_dmg = str(r[2]).strip(), str(r[3]).strip()
                 if p_dmg and p_dmg.upper() not in ["NAN", "NONE", ""]:
-                    if p_dmg not in player_data_dict:
-                        player_data_dict[p_dmg] = {"K": "", "D": "", "MVP": "", "DEA": ""}
-                    if val_dmg:
-                        player_data_dict[p_dmg]["D"] = val_dmg
+                    if p_dmg not in player_data_dict: player_data_dict[p_dmg] = {"K": 0, "D": 0, "MVP": 0, "DEA": 0}
+                    player_data_dict[p_dmg]["D"] = val_dmg if val_dmg else 0
 
-                # Blocco 3: Player (Col H / indice 4) e MVP (Col I / indice 5)
-                p_mvp = str(r[4]).strip() if r[4] is not None else ""
-                val_mvp = str(r[5]).strip() if r[5] is not None else ""
+                p_mvp, val_mvp = str(r[4]).strip(), str(r[5]).strip()
                 if p_mvp and p_mvp.upper() not in ["NAN", "NONE", ""]:
-                    if p_mvp not in player_data_dict:
-                        player_data_dict[p_mvp] = {"K": "", "D": "", "MVP": "", "DEA": ""}
-                    if val_mvp:
-                        player_data_dict[p_mvp]["MVP"] = val_mvp
+                    if p_mvp not in player_data_dict: player_data_dict[p_mvp] = {"K": 0, "D": 0, "MVP": 0, "DEA": 0}
+                    player_data_dict[p_mvp]["MVP"] = val_mvp if val_mvp else 0
 
-                # Blocco 4: Player (Col J / indice 6) e Death (Col K / indice 7)
-                p_dea = str(r[6]).strip() if r[6] is not None else ""
-                val_dea = str(r[7]).strip() if r[7] is not None else ""
+                p_dea, val_dea = str(r[6]).strip(), str(r[7]).strip()
                 if p_dea and p_dea.upper() not in ["NAN", "NONE", ""]:
-                    if p_dea not in player_data_dict:
-                        player_data_dict[p_dea] = {"K": "", "D": "", "MVP": "", "DEA": ""}
-                    if val_dea:
-                        player_data_dict[p_dea]["DEA"] = val_dea
+                    if p_dea not in player_data_dict: player_data_dict[p_dea] = {"K": 0, "D": 0, "MVP": 0, "DEA": 0}
+                    player_data_dict[p_dea]["DEA"] = val_dea if val_dea else 0
 
-            # Convertiamo il dizionario in lista per il DataFrame
-            rows = []
-            for player_name, metrics in player_data_dict.items():
-                rows.append({
-                    "Player": player_name,
-                    "K": metrics["K"],
-                    "D": metrics["D"],
-                    "MVP": metrics["MVP"],
-                    "DEA": metrics["DEA"]
-                })
-            
+            rows = [{"Player": k, **v} for k, v in player_data_dict.items()]
             df = pd.DataFrame(rows)
             
-            # Ordinamento alfabetico per nome giocatore
+            # --- FIX ORDINAMENTO ---
             if not df.empty:
-                df = df.sort_values(by="Player", ascending=True).reset_index(drop=True)
-            else:
-                df = pd.DataFrame(columns=["Player", "K", "D", "MVP", "DEA"])
-
-            st.dataframe(
-                df, 
-                use_container_width=True, 
-                hide_index=True,
-                column_config={
-                    "Player": st.column_config.TextColumn("Player", width="medium"),
-                    "K": st.column_config.TextColumn("K", width="small"),
-                    "D": st.column_config.TextColumn("D", width="small"),
-                    "MVP": st.column_config.TextColumn("MVP", width="small"),
-                    "DEA": st.column_config.TextColumn("DEA", width="small")
-                }
-            )
+                # Forza le K a numero per ordinare correttamente
+                df['K'] = pd.to_numeric(df['K'], errors='coerce').fillna(0)
+                # Ordina per K decrescente
+                df = df.sort_values(by="K", ascending=False).reset_index(drop=True)
+            
+            st.dataframe(df, use_container_width=True, hide_index=True)
         except Exception as e: 
             st.error(f"Error: {e}")
 
