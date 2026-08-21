@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 # 1. Page Configuration
-st.set_page_config(page_title="Euro Scrims", layout="centered")
+st.set_page_config(page_title="Eu Scrims Club", layout="centered")
 
 # 2. CSS for Dark Mode, buttons, and clean tables
 st.markdown("""
