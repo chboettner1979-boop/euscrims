@@ -202,21 +202,30 @@ with col2:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
             
             def get_stat_block(player_col, val_col):
-                p_vals = ws.col_values(player_col)[10:34]
-                v_vals = ws.col_values(val_col)[10:34]
-                while len(p_vals) < 24: p_vals.append("")
-                while len(v_vals) < 24: v_vals.append("")
+                # Saltiamo le prime righe errate partendo da un indice più basso pulito (es. 12 in poi)
+                p_vals = ws.col_values(player_col)[12:34]
+                v_vals = ws.col_values(val_col)[12:34]
+                while len(p_vals) < len(v_vals): p_vals.append("")
+                while len(v_vals) < len(p_vals): v_vals.append("")
                 df_temp = pd.DataFrame({"Player": p_vals, "Val": v_vals})
-                df_temp = df_temp[df_temp["Player"].str.strip() != ""]
+                
+                # Pulizia rigorosa da #REF!, celle vuote o testi non validi
+                df_temp["Player"] = df_temp["Player"].astype(str).str.strip()
+                df_temp = df_temp[
+                    (df_temp["Player"] != "") & 
+                    (df_temp["Player"].str.upper() != "#REF!") & 
+                    (~df_temp["Player"].str.lower().str.contains("no players"))
+                ]
                 return df_temp
 
+            # Se la colonna K si trova in un'altra colonna, modifica qui i numeri (es. 4 per Player, 5 per K)
             df_kill = get_stat_block(4, 5).rename(columns={"Val": "K"})
             df_dmg  = get_stat_block(6, 7).rename(columns={"Val": "DMG"})
             df_mvp  = get_stat_block(8, 9).rename(columns={"Val": "MVP"})
             df_dea  = get_stat_block(10, 11).rename(columns={"Val": "DEA"})
 
             all_players = pd.unique(pd.concat([df_kill["Player"], df_dmg["Player"], df_mvp["Player"], df_dea["Player"]]))
-            all_players = [p for p in all_players if p.strip() != ""]
+            all_players = [p for p in all_players if p and p.strip() != ""]
             
             df_final = pd.DataFrame({"Player": all_players})
 
