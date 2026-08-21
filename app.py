@@ -146,31 +146,29 @@ with col2:
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
             
-            # Leggiamo l'intera area tabellare che va dalla colonna D alla colonna K (righe 11-34)
-            raw_data = ws.get('D11:K34')
+            # Leggiamo ogni colonna separatamente per garantire l'allineamento perfetto
+            # Recuperiamo i nomi (D) e le rispettive statistiche (E, G, I, K)
+            # .col_values(index) recupera tutta la colonna, poi puliamo l'intervallo 11-34
+            def get_clean_col(col_idx):
+                col = ws.col_values(col_idx)[10:34] # Indice 10:34 corrisponde alle righe 11-34
+                # Riempimento con stringa vuota se la colonna è più corta di 24 righe
+                while len(col) < 24:
+                    col.append("")
+                return col
+
+            df = pd.DataFrame({
+                "Player": get_clean_col(4),  # Colonna D
+                "K": get_clean_col(5),       # Colonna E
+                "D": get_clean_col(7),       # Colonna G
+                "MVP": get_clean_col(9),     # Colonna I
+                "DEA": get_clean_col(11)     # Colonna K
+            })
             
-            rows = []
-            for r in raw_data:
-                while len(r) < 8:
-                    r.append("")
-                
-                player_name = str(r[0]).strip() if r[0] is not None else ""
-                
-                if player_name:
-                    rows.append({
-                        "Player": player_name,
-                        "K": str(r[1]) if r[1] is not None else "",     # Colonna E
-                        "D": str(r[3]) if r[3] is not None else "",     # Colonna G
-                        "MVP": str(r[5]) if r[5] is not None else "",   # Colonna I
-                        "DEA": str(r[7]) if r[7] is not None else ""    # Colonna K
-                    })
+            # Rimuoviamo le righe dove il campo Player è vuoto
+            df = df[df["Player"].str.strip() != ""]
             
-            df = pd.DataFrame(rows)
-            
-            if not df.empty:
-                df = df.sort_values(by="Player", ascending=True).reset_index(drop=True)
-            else:
-                df = pd.DataFrame(columns=["Player", "K", "D", "MVP", "DEA"])
+            # Ordinamento crescente per Nome Giocatore
+            df = df.sort_values(by="Player", key=lambda col: col.str.lower()).reset_index(drop=True)
 
             st.dataframe(
                 df, 
@@ -178,14 +176,14 @@ with col2:
                 hide_index=True,
                 column_config={
                     "Player": st.column_config.TextColumn("Player", width="medium"),
-                    "K": st.column_config.TextColumn("K", width="small"),
-                    "D": st.column_config.TextColumn("D", width="small"),
-                    "MVP": st.column_config.TextColumn("MVP", width="small"),
-                    "DEA": st.column_config.TextColumn("DEA", width="small")
+                    "K": st.column_config.NumberColumn("K", format="%d"),
+                    "D": st.column_config.NumberColumn("D", format="%d"),
+                    "MVP": st.column_config.NumberColumn("MVP", format="%d"),
+                    "DEA": st.column_config.NumberColumn("DEA", format="%d")
                 }
             )
         except Exception as e: 
-            st.error(f"Error: {e}")
+            st.error(f"Errore nel caricamento: {e}")
 
     else:
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>Player Register</h2>", unsafe_allow_html=True)
