@@ -140,7 +140,8 @@ with col2:
             
         except Exception as e: 
             st.error(f"Error: {e}")
-elif st.session_state.page == 'Stats':
+
+    elif st.session_state.page == 'Stats':
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>STATS</h2>", unsafe_allow_html=True)
         try:
             ws = init_connection().open_by_key('1qfq7X9IuAcWEhFUuUbNkFfY2ssrmt04r1MFiaCC6ql0').get_worksheet_by_id(1732621049)
@@ -150,25 +151,22 @@ elif st.session_state.page == 'Stats':
             
             rows = []
             for r in raw_data:
-                # Assicuriamoci che la riga abbia abbastanza elementi riempiendola con stringhe vuote se necessario
                 while len(r) < 8:
                     r.append("")
                 
                 player_name = str(r[0]).strip() if r[0] is not None else ""
                 
-                # Consideriamo solo le righe che hanno un nome valido inserito
                 if player_name:
                     rows.append({
                         "Player": player_name,
-                        "K": str(r[1]) if r[1] is not None else "",     # Colonna E (indice 1 relativo a D)
-                        "D": str(r[3]) if r[3] is not None else "",     # Colonna G (indice 3 relativo a D)
-                        "MVP": str(r[5]) if r[5] is not None else "",   # Colonna I (indice 5 relativo a D)
-                        "DEA": str(r[7]) if r[7] is not None else ""    # Colonna K (indice 7 relativo a D)
+                        "K": str(r[1]) if r[1] is not None else "",     # Colonna E
+                        "D": str(r[3]) if r[3] is not None else "",     # Colonna G
+                        "MVP": str(r[5]) if r[5] is not None else "",   # Colonna I
+                        "DEA": str(r[7]) if r[7] is not None else ""    # Colonna K
                     })
             
             df = pd.DataFrame(rows)
             
-            # Se ci sono dati, ordiniamo in base al nome del giocatore per maggiore pulizia e ordine alfabetico
             if not df.empty:
                 df = df.sort_values(by="Player", ascending=True).reset_index(drop=True)
             else:
@@ -186,7 +184,8 @@ elif st.session_state.page == 'Stats':
                     "DEA": st.column_config.TextColumn("DEA", width="small")
                 }
             )
-        except Exception as e: st.error(f"Error: {e}")
+        except Exception as e: 
+            st.error(f"Error: {e}")
 
     else:
         st.markdown("<h2 style='text-align: center; color: #FFD700;'>Player Register</h2>", unsafe_allow_html=True)
@@ -195,4 +194,5 @@ elif st.session_state.page == 'Stats':
             df = pd.DataFrame(data, columns=["Player"])
             df.insert(0, "N.", range(1, len(df) + 1))
             st.dataframe(df, use_container_width=True, hide_index=True)
-        except Exception as e: st.error(f"Error: {e}")
+        except Exception as e: 
+            st.error(f"Error: {e}")
